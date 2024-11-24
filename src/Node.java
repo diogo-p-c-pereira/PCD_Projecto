@@ -120,7 +120,7 @@ public class Node {
             WordSearchMessage message = new WordSearchMessage(s);
             currentSearch.clear();
             for(DealWithClient dealWithClient : dealWithClients){
-                dealWithClient.request(message);
+                dealWithClient.send(message);
             }
         });
         t.start();
@@ -148,7 +148,6 @@ public class Node {
             if(!found){
                 FileSearch se = new FileSearch(r);
                 currentSearch.addElement(se);
-                //System.out.println("New entry " + r.getPort());
             }
             updateSearchLock.unlock();
         }
@@ -174,6 +173,7 @@ public class Node {
 
         @Override
         public void run() {
+            System.out.println("Awaiting connection...");
             while(!interrupted()) {
                 try {
                     Socket socket = serverSocket.accept();

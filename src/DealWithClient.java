@@ -49,7 +49,7 @@ public class DealWithClient extends Thread{
     ////
 
     //// Sends any message/request to client Node
-    public void request(Serializable message) {  //TODO Mostrar à Marta
+    public void send(Serializable message) {  //TODO Mostrar à Marta
         try {
             out.writeObject(message);
         } catch (IOException e) {
