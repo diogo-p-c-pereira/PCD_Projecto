@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.net.InetAddress;
 
 public final class NewConnectionRequest implements Serializable {
-    private InetAddress address; //source address
-    private int port; //source port
+    private final InetAddress address; //source address
+    private final int port; //source port
 
     public NewConnectionRequest(InetAddress address, int port) {
         this.address = address;

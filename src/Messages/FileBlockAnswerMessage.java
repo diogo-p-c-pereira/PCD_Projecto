@@ -16,4 +16,12 @@ public final class FileBlockAnswerMessage implements Serializable {
     public byte[] getData() {
         return data;
     }
+
+    public InetAddress getAddress() {
+        return address;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }

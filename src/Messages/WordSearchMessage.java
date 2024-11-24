@@ -3,7 +3,7 @@ package Messages;
 import java.io.Serializable;
 
 public final class WordSearchMessage implements Serializable {
-    private String keyword;
+    private final String keyword;
 
     public WordSearchMessage(String search) {
         this.keyword = search;

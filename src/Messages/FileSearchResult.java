@@ -5,11 +5,11 @@ import java.net.InetAddress;
 
 public final class FileSearchResult implements Serializable {
     private final WordSearchMessage searchMessage;
-    private byte[] hash; //file hash
-    private long file_size;
+    private final byte[] hash; //file hash
+    private final long file_size;
     private final String file_name;
-    private InetAddress address; //source address
-    private int port; //source port
+    private final InetAddress address; //source address
+    private final int port; //source port
 
     public FileSearchResult(WordSearchMessage searchMessage, long file_size, String file_name, int port, byte[] hash, InetAddress address) {
         this.searchMessage = searchMessage;
