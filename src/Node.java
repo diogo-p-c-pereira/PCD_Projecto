@@ -47,7 +47,7 @@ public class Node {
 
 
     //// Getters
-    public DefaultListModel getCurrentSearchResults() {
+    public DefaultListModel<FileSearch> getCurrentSearchResults() {
         return currentSearch;
     }
     public int getPort(){
@@ -66,7 +66,7 @@ public class Node {
 
     //// Updates File Hashmap with the files on the folder
     public void updateFileList(){
-        File[] fs = new File(path).listFiles(/*f -> f.getName().endsWith(".mp3")*/ f -> true); //TODO Alterar, só para testes
+        File[] fs = new File(path).listFiles(/*f -> f.getName().endsWith(".mp3")*/ _ -> true); //TODO Alterar, só para testes
         if (fs != null) {
             for(File f : fs){
                 files.put(f, generateFileHash(f));

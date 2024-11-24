@@ -21,7 +21,7 @@ public class DownloadTasksManager extends Thread {
     public DownloadTasksManager(List<FileSearchResult> resultList, Node node) {
         this.node = node;
         this.resultList = resultList;
-        blockRequests = generateFileBlockRequestMessages(resultList.get(0));
+        blockRequests = generateFileBlockRequestMessages(resultList.getFirst());
         startTime = System.currentTimeMillis();
     }
 

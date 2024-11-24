@@ -15,7 +15,7 @@ public class GUI  {
     private JButton searchButton;
 
     //// FileSearchResult List
-    private JList searchList;
+    private JList<FileSearch> searchList;
 
     //// East Buttons
     private JButton downloadButton;
@@ -45,11 +45,11 @@ public class GUI  {
         northPanel.add(searchText);
 
         searchButton = new JButton ("Procurar");
-        searchButton.addActionListener(e -> node.search(searchText.getText()));
+        searchButton.addActionListener(_ -> node.search(searchText.getText()));
         northPanel.add(searchButton);
 
         //File Search Result List
-        searchList = new JList(node.getCurrentSearchResults());
+        searchList = new JList<>(node.getCurrentSearchResults());
         JScrollPane scrollPane = new JScrollPane(searchList);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
         frame.add(scrollPane, BorderLayout.CENTER);
@@ -61,16 +61,16 @@ public class GUI  {
 
         //Download Button
         downloadButton = new JButton ("Descarregar");
-        downloadButton.addActionListener(e -> {
+        downloadButton.addActionListener(_ -> {
             /*TODO ir vendo*/
-            FileSearch res = (FileSearch)searchList.getSelectedValue();
+            FileSearch res = searchList.getSelectedValue();
             node.startDownload(res.getList());
         });
         eastPanel.add(downloadButton);
 
         //Connect Button
         connectButton = new JButton("Ligar a nó");
-        connectButton.addActionListener(e -> newConnectionPrompt());
+        connectButton.addActionListener(_ -> newConnectionPrompt());
         eastPanel.add(connectButton);
     }
 
@@ -90,12 +90,12 @@ public class GUI  {
 
         //Cancel Button
         JButton cancel = new JButton("Cancelar");
-        cancel.addActionListener(e -> jdialog.dispose());
+        cancel.addActionListener(_ -> jdialog.dispose());
         jdialog.add(cancel);
 
         //OK Button
         JButton save = new JButton("OK");
-        save.addActionListener(e -> {
+        save.addActionListener(_ -> {
             if(node.newConnection(address.getText(), Integer.parseInt(port.getText()))) {
                 JOptionPane.showMessageDialog(jdialog, "Conectado com sucesso");
             }else{
