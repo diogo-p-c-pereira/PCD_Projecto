@@ -18,6 +18,7 @@ public class Node {
     private ServerSocket serverSocket;
     private List<DealWithClient> dealWithClients;
     private DefaultListModel<FileSearch> currentSearch;
+    private List<DownloadTasksManager> tasksManagers;
 
     public Node(int port, String path) {
         try {
@@ -26,6 +27,7 @@ public class Node {
             this.files = new HashMap<>();
             currentSearch = new DefaultListModel<>();
             dealWithClients = new ArrayList<>();
+            tasksManagers = new ArrayList<>();
             File dir = new File(path);
             if (!dir.exists()) dir.mkdirs();
             updateFileList();
@@ -54,7 +56,11 @@ public class Node {
         return serverSocket.getLocalPort();
     }
     public InetAddress getAddress() {
-        return serverSocket.getInetAddress();
+        try {
+            return InetAddress.getByName(null);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
     public ServerSocket getSocket(){
         return serverSocket;
@@ -74,6 +80,7 @@ public class Node {
         }
     }
     ////
+
 
     //// Generates Hash from the File data
     public static byte[] generateFileHash(File f) {
@@ -100,6 +107,7 @@ public class Node {
     //// Download ////
     public void startDownload(List<FileSearchResult> results){
         DownloadTasksManager downloadTasksManager = new DownloadTasksManager(results, this);
+        tasksManagers.add(downloadTasksManager);
         downloadTasksManager.start();
         try {
             downloadTasksManager.join();
@@ -107,7 +115,23 @@ public class Node {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    public DownloadTasksManager getTaskManager(byte[] hash){
+        for(DownloadTasksManager downloadTasksManager : tasksManagers){
+            if(Arrays.equals(downloadTasksManager.getHash(), hash)){
+                return downloadTasksManager;
+            }
+        }
+        return null;
+    }
+    public DealWithClient getDealWithClient(InetAddress address, int port) {
+        for(DealWithClient dealWithClient : dealWithClients){
+            if(dealWithClient.getInetAddress().equals(address) && dealWithClient.getPort() == port){
+                return dealWithClient;
+            }
+        }
+        throw new IllegalArgumentException("No deal with client found");
     }
     //////////
 

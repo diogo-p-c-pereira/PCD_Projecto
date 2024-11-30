@@ -49,7 +49,7 @@ public class DealWithClient extends Thread{
     ////
 
     //// Sends any message/request to client Node
-    public void send(Serializable message) {  //TODO Mostrar à Marta
+    public void send(Serializable message) {
         try {
             out.writeObject(message);
         } catch (IOException e) {
@@ -85,7 +85,7 @@ public class DealWithClient extends Thread{
         for(int i = offset; i <blockData.length; i++){
             blockData[i] = f[offset+i];
         }
-        return new FileBlockAnswerMessage(blockData,node.getSocket().getInetAddress(), node.getPort());
+        return new FileBlockAnswerMessage(blockData, request.getHash(), node.getSocket().getInetAddress(), node.getPort());
     }
     ////
 
@@ -105,6 +105,11 @@ public class DealWithClient extends Thread{
                 if(obj instanceof FileSearchResultList){ //Receber Resultados de Procura
                     List<FileSearchResult> list = ((FileSearchResultList)obj).getFileSearchResultList();
                     node.updateSearchList(list);
+                }
+                if(obj instanceof FileBlockAnswerMessage){ //Receber Downloads
+                    FileBlockAnswerMessage answer = (FileBlockAnswerMessage) obj;
+                    DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
+                    dtm.putBlockAnswer(answer);
                 }
             } catch (IOException e) {
                 break;
