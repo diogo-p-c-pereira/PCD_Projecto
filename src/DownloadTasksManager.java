@@ -1,10 +1,13 @@
 import Messages.FileBlockAnswerMessage;
 import Messages.FileBlockRequestMessage;
 import Messages.FileSearchResult;
+
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,21 +16,26 @@ public class DownloadTasksManager extends Thread {
     public static final int BLOCK_SIZE = 10240; //Block size in bytes
     public static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
     private Node node;
+    private final String fileName;
     private byte[] file;
-    private byte[] hash;
+    private final byte[] hash;
     private final List<FileSearchResult> resultList;
     private List<FileBlockRequestMessage> blockRequests;
     private List<FileBlockAnswerMessage> blockAnswers;
     private final long startTime;
     private List<DownloadTask> tasks;
     private Lock lock = new ReentrantLock();
+    private CountdownLatch countdownLatch;
     //TODO arranjar condiçoes para a Lock
 
     public DownloadTasksManager(List<FileSearchResult> resultList, Node node) {
         this.node = node;
         this.hash = resultList.getFirst().getHash();
         this.resultList = resultList;
-        blockRequests = generateFileBlockRequestMessages(resultList.getFirst());
+        FileSearchResult result = resultList.getFirst();
+        this.file = new byte[(int)result.getFile_size()];
+        fileName = result.getFile_name();
+        blockRequests = generateFileBlockRequestMessages(result);
         blockAnswers = new ArrayList<>();
         startTime = System.currentTimeMillis();
         tasks = new ArrayList<>();
@@ -46,6 +54,7 @@ public class DownloadTasksManager extends Thread {
 
     public synchronized void putBlockAnswer(FileBlockAnswerMessage blockAnswer) { //TODO ver syncronized
         blockAnswers.add(blockAnswer);
+        countdownLatch.countDown();
     }
 
      public byte[] getHash(){
@@ -56,16 +65,16 @@ public class DownloadTasksManager extends Thread {
     public List<FileBlockRequestMessage> generateFileBlockRequestMessages(FileSearchResult request) {
         //f.length -> file size in bytes
         int nBlocks;
-        long fileSize = request.getFile_size();
+        int fileSize = (int)request.getFile_size();
         if(fileSize%BLOCK_SIZE != 0){
-            nBlocks = (int)(fileSize/BLOCK_SIZE)+1;
+            nBlocks = (fileSize/BLOCK_SIZE)+1;
         }else{
-            nBlocks = (int)(fileSize/BLOCK_SIZE);
+            nBlocks = (fileSize/BLOCK_SIZE);
         }
         List<FileBlockRequestMessage> blockList = new ArrayList<>();
         for(int i = 0, offset = 0; i < nBlocks; i++){
             if(i==nBlocks-1){
-                blockList.add(new FileBlockRequestMessage(request.getHash(), offset, (int)(fileSize-offset)));
+                blockList.add(new FileBlockRequestMessage(request.getHash(), offset, fileSize-offset));
                 break;
             }
             blockList.add(new FileBlockRequestMessage(request.getHash(), offset, BLOCK_SIZE));
@@ -75,27 +84,43 @@ public class DownloadTasksManager extends Thread {
     }
     ////
 
-    public void finishDownload() {
-        System.out.println("Download finished");
-        System.out.println(blockRequests.size());
-        System.out.println(blockAnswers.size());
-        System.out.println(Arrays.toString(blockAnswers.getFirst().getHash()));
+    private void finishDownload() throws NoSuchAlgorithmException, IOException {
+        joinFileBlocks();
+        byte[] newHash = MessageDigest.getInstance("SHA-256").digest(file);
+        if(Arrays.equals(hash, newHash)){
+            node.writeFile(file, fileName);
+            node.updateFileList();
+            System.out.println("Download finished");
+        }else{
+            //TODO Download Failed
+            System.out.println("Download failed: Hash doesn't match");
+        }
+    }
+
+    private void joinFileBlocks(){
+        for(FileBlockAnswerMessage blockAnswer : blockAnswers) {
+            byte[] data = blockAnswer.getData();
+            int offset = (int)blockAnswer.getOffset();
+            for(int i= 0; i< blockAnswer.getOffset()+data.length; i++){
+                file[offset+i] = data[i];
+            }
+        }
     }
 
     @Override
     public void run() {
-        CyclicBarrier barrier = new CyclicBarrier(resultList.size(), new Runnable() {
-            @Override
-            public void run() {
-                finishDownload();
-            }
-        });
+        countdownLatch = new CountdownLatch(blockRequests.size());
         for(FileSearchResult result : resultList){
-            DownloadTask task = new DownloadTask(result,this, node.getDealWithClient(result.getAddress(), result.getPort()), barrier);
+            DownloadTask task = new DownloadTask(/*result,*/this, node.getDealWithClient(result.getAddress(), result.getPort()));
             tasks.add(task);
             task.start();
         }
-        //TODO Barreira que espera que as threads acabem e junto o ficheiro/grava
+        try {
+            countdownLatch.await();
+            finishDownload();
+        } catch (InterruptedException | NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

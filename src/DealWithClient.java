@@ -81,11 +81,11 @@ public class DealWithClient extends Thread{
         File file = node.getFile(request.getHash());
         byte[] f = Files.readAllBytes(file.toPath());
         int offset = (int)request.getBlockOffset();
-        byte[] blockData = new byte[request.getBlockLength()];
+        byte[] blockData = new byte[(int)request.getBlockLength()];
         for(int i = offset; i <blockData.length; i++){
             blockData[i] = f[offset+i];
         }
-        return new FileBlockAnswerMessage(blockData, request.getHash(), node.getSocket().getInetAddress(), node.getPort());
+        return new FileBlockAnswerMessage(blockData, request.getHash(), request.getBlockOffset(), node.getSocket().getInetAddress(), node.getPort());
     }
     ////
 
@@ -94,20 +94,19 @@ public class DealWithClient extends Thread{
         while(!interrupted()){
             try {
                 Object obj = in.readObject();
-                if(obj instanceof WordSearchMessage){  //Responder aos pedidos de Procura
-                    List<FileSearchResult> searchResultList = search((WordSearchMessage) obj);
+                if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
+                    List<FileSearchResult> searchResultList = search(search);
                     out.writeObject(new FileSearchResultList(searchResultList));
                 }
-                if(obj instanceof FileBlockRequestMessage){  //Responder aos pedidos de Download
-                    FileBlockAnswerMessage answer = createFileBlockAnswer((FileBlockRequestMessage) obj);
+                if(obj instanceof FileBlockRequestMessage request){  //Responder aos pedidos de Download
+                    FileBlockAnswerMessage answer = createFileBlockAnswer(request);
                     out.writeObject(answer);
                 }
-                if(obj instanceof FileSearchResultList){ //Receber Resultados de Procura
-                    List<FileSearchResult> list = ((FileSearchResultList)obj).getFileSearchResultList();
+                if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
+                    List<FileSearchResult> list = resultList.getFileSearchResultList();
                     node.updateSearchList(list);
                 }
-                if(obj instanceof FileBlockAnswerMessage){ //Receber Downloads
-                    FileBlockAnswerMessage answer = (FileBlockAnswerMessage) obj;
+                if(obj instanceof FileBlockAnswerMessage answer){ //Receber Downloads
                     DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
                     dtm.putBlockAnswer(answer);
                 }

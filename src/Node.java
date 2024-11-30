@@ -104,17 +104,15 @@ public class Node {
         return null; //TODO Mandar erro qq dps
     }
 
+    public void writeFile(byte[] file, String filename) throws IOException {
+        Files.write(new File(path + File.separator + filename).toPath() ,file);
+    }
+
     //// Download ////
     public void startDownload(List<FileSearchResult> results){
         DownloadTasksManager downloadTasksManager = new DownloadTasksManager(results, this);
         tasksManagers.add(downloadTasksManager);
         downloadTasksManager.start();
-        try {
-            downloadTasksManager.join();
-            updateFileList();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public DownloadTasksManager getTaskManager(byte[] hash){
@@ -123,7 +121,7 @@ public class Node {
                 return downloadTasksManager;
             }
         }
-        return null;
+        throw new RuntimeException("No DownloadTasksManager found for hash: " + Arrays.toString(hash));
     }
     public DealWithClient getDealWithClient(InetAddress address, int port) {
         for(DealWithClient dealWithClient : dealWithClients){

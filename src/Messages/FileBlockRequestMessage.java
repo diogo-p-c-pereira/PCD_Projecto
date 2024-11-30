@@ -17,7 +17,7 @@ public final class FileBlockRequestMessage implements Serializable {
         return blockOffset;
     }
 
-    public int getBlockLength(){
+    public long getBlockLength(){
         return blockLength;
     }
 
