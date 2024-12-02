@@ -6,8 +6,9 @@ import javax.swing.*;
 
 
 public class GUI  {
-    private Node node; //Current Node
-    private JFrame frame;
+    private static GUI instance;
+    private final Node node; //Current Node
+    private final JFrame frame;
 
     //// Panels
     private JPanel northPanel;
@@ -24,7 +25,15 @@ public class GUI  {
     private JButton downloadButton;
     private JButton connectButton;
 
+    public static GUI getInstance(){
+        if(instance == null) {
+            throw new IllegalStateException();
+        }
+        return instance;
+    }
+
     public GUI(Node node) {
+        instance = this;
         this.node = node;
         frame = new JFrame(node.toString());
         addFrameContent();
@@ -113,9 +122,13 @@ public class GUI  {
         jdialog.setVisible(true);
     }
 
+    //// Messages invoked by DownloadManager (Download Complete or Failed)
+    public void showMessage(String msg) {
+       JOptionPane.showMessageDialog(frame, msg);
+    }
+
     public void open () {
         frame.setVisible(true);
     }
 
-    //TODO GUI for Download Complete Pop-up
 }

@@ -4,7 +4,6 @@ import Messages.FileSearchResult;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -14,10 +13,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadTasksManager extends Thread {
-    //TODO Equivalente ao DealWithClient
     public static final int BLOCK_SIZE = 10240; //Block size in bytes
     public static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
-    private Node node;
+    private final Node node;
     private final String fileName;
     private byte[] file;
     private final byte[] hash;
@@ -25,10 +23,8 @@ public class DownloadTasksManager extends Thread {
     private List<FileBlockRequestMessage> blockRequests;
     private List<FileBlockAnswerMessage> blockAnswers;
     private final long startTime;
-    private List<DownloadTask> tasks;
-    private Lock lock = new ReentrantLock();
-    private CountdownLatch countdownLatch;
-    //TODO arranjar condiçoes para a Lock
+    //private List<DownloadTask> tasks;
+    private CountdownLatch countdownLatch; //Used to wait until all Blocks are received
 
     public DownloadTasksManager(List<FileSearchResult> resultList, Node node) {
         this.node = node;
@@ -40,20 +36,23 @@ public class DownloadTasksManager extends Thread {
         blockRequests = generateFileBlockRequestMessages(result);
         blockAnswers = new ArrayList<>();
         startTime = System.currentTimeMillis();
-        tasks = new ArrayList<>();
+        //tasks = new ArrayList<>();
     }
 
-
+    //// BlockRequest Getter used by DownloadTask Thread
+    private final Lock requestsLock = new ReentrantLock();
+    //TODO arranjar condiçoes para a Lock
     public FileBlockRequestMessage getBlockRequest() {
+        requestsLock.lock();
         if (blockRequests.isEmpty()) {
             return null;
         }
-        lock.lock();
         FileBlockRequestMessage request = blockRequests.removeFirst();
-        lock.unlock();
+        requestsLock.unlock();
         return request;
     }
 
+    //// Used by DealWithClient when it receives a download answer
     public synchronized void putBlockAnswer(FileBlockAnswerMessage blockAnswer) { //TODO ver syncronized
         blockAnswers.add(blockAnswer);
         countdownLatch.countDown();
@@ -84,31 +83,86 @@ public class DownloadTasksManager extends Thread {
         }
         return blockList;
     }
-    ////
 
+    /// Finish Download and invokes methods to writeFile to disk and update File list
+    /// Also calls GUI to display download result
     private void finishDownload() throws NoSuchAlgorithmException, IOException {
-        joinFileBlocks();
+        List<SupplierResult> list = joinFileBlocks();
         byte[] newHash = MessageDigest.getInstance("SHA-256").digest(file);
         if(Arrays.equals(hash, newHash)){
             node.writeFile(file, fileName);
             node.updateFileList();
-            System.out.println("Download finished: " + fileName);
+            int elapsedTime = (int) (System.currentTimeMillis() - startTime)/1000;
+            System.out.println("Download finished: " + fileName + " Elapsed time: " + elapsedTime + "s");
+            GUI.getInstance().showMessage("Descarga Completa: " + fileName + "\n" +
+                    SupplierResult.listToString(list) + "Tempo Decorrido:" + elapsedTime + "s");
         }else{
-            //TODO Download Failed
-            System.out.println("Download failed: Hash doesn't match: " + fileName + "\n" + Arrays.toString(hash)
-            + "\n" + Arrays.toString(newHash));
+            System.out.println("Download failed: Hash doesn't match. File:" + fileName);
+            GUI.getInstance().showMessage("Download failed: Hash doesn't match. \n File:" + fileName);
         }
     }
 
-    private void joinFileBlocks(){
+
+    //// Joins all data arrays from FileBlockAnswerMessage to the byte[] file
+    private List<SupplierResult> joinFileBlocks(){
+        List<SupplierResult> list = new ArrayList<>();
         for(FileBlockAnswerMessage blockAnswer : blockAnswers) {
             byte[] data = blockAnswer.getData();
-            int offset = (int)blockAnswer.getOffset();
-            for(int i= 0; i<data.length; i++){
-                file[offset+i] = data[i];
+            int offset = (int) blockAnswer.getOffset();
+            for (int i = 0; i < data.length; i++) {
+                file[offset + i] = data[i];
             }
+           list = SupplierResult.addSupplierResult(list, blockAnswer.getAddress(), blockAnswer.getPort());
+        }
+        return list;
+    }
+
+    //// SupplierResult class to assist in download result display
+    //// and its list auxiliary methods
+    private static class SupplierResult{
+        private final InetAddress address;
+        private final int port;
+        private int nBlocks;
+
+        public SupplierResult(InetAddress address, int port) {
+            this.address = address;
+            this.port = port;
+            nBlocks = 1;
+        }
+        public void incrementBlock(){
+            nBlocks++;
+        }
+        @Override
+        public String toString() {
+            return "Fornecedor [endereco=" + address + ", porto=" + port + "]:" + nBlocks;
+        }
+
+        //// Used to increment or add SupplierResult to List
+        public static List<SupplierResult> addSupplierResult(List<SupplierResult> list, InetAddress address, int port) {
+            boolean added = false;
+            for (SupplierResult temp : list) {
+                if (temp.address.equals(address) && temp.port == port) {
+                    temp.incrementBlock();
+                    added = true;
+                    break;
+                }
+            }
+            if (!added) {
+                list.add(new SupplierResult(address, port));
+            }
+            return list;
+        }
+
+        //// Used to create a String with all SupplierResults to send to GUI
+        public static String listToString(List<SupplierResult> list) {
+            String s = "";
+            for (SupplierResult temp : list) {
+                s += temp.toString()+"\n";
+            }
+            return s;
         }
     }
+
 
     @Override
     public void run() {
@@ -116,7 +170,7 @@ public class DownloadTasksManager extends Thread {
         countdownLatch = new CountdownLatch(blockRequests.size());
         for(FileSearchResult result : resultList){
             DownloadTask task = new DownloadTask(/*result,*/this, node.getDealWithClient(result.getAddress(), result.getPort()));
-            tasks.add(task);
+            //tasks.add(task);
             task.start();
         }
         try {
