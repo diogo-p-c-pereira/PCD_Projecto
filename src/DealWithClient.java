@@ -82,10 +82,10 @@ public class DealWithClient extends Thread{
         byte[] f = Files.readAllBytes(file.toPath());
         int offset = (int)request.getBlockOffset();
         byte[] blockData = new byte[(int)request.getBlockLength()];
-        for(int i = offset; i <blockData.length; i++){
+        for(int i = 0; i <blockData.length; i++){
             blockData[i] = f[offset+i];
         }
-        return new FileBlockAnswerMessage(blockData, request.getHash(), request.getBlockOffset(), node.getSocket().getInetAddress(), node.getPort());
+        return new FileBlockAnswerMessage(blockData, request.getHash(), request.getBlockOffset(), node.getAddress() , node.getPort());
     }
     ////
 
@@ -107,6 +107,7 @@ public class DealWithClient extends Thread{
                     node.updateSearchList(list);
                 }
                 if(obj instanceof FileBlockAnswerMessage answer){ //Receber Downloads
+                    System.out.println("Block received from: " +answer.getAddress() + ":" + answer.getPort());
                     DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
                     dtm.putBlockAnswer(answer);
                 }

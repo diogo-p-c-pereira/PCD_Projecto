@@ -3,6 +3,8 @@ import Messages.FileBlockRequestMessage;
 import Messages.FileSearchResult;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -90,10 +92,11 @@ public class DownloadTasksManager extends Thread {
         if(Arrays.equals(hash, newHash)){
             node.writeFile(file, fileName);
             node.updateFileList();
-            System.out.println("Download finished");
+            System.out.println("Download finished: " + fileName);
         }else{
             //TODO Download Failed
-            System.out.println("Download failed: Hash doesn't match");
+            System.out.println("Download failed: Hash doesn't match: " + fileName + "\n" + Arrays.toString(hash)
+            + "\n" + Arrays.toString(newHash));
         }
     }
 
@@ -101,7 +104,7 @@ public class DownloadTasksManager extends Thread {
         for(FileBlockAnswerMessage blockAnswer : blockAnswers) {
             byte[] data = blockAnswer.getData();
             int offset = (int)blockAnswer.getOffset();
-            for(int i= 0; i< blockAnswer.getOffset()+data.length; i++){
+            for(int i= 0; i<data.length; i++){
                 file[offset+i] = data[i];
             }
         }
@@ -109,6 +112,7 @@ public class DownloadTasksManager extends Thread {
 
     @Override
     public void run() {
+        System.out.println("Download started: " + fileName + " Expected blocks: " + blockRequests.size());
         countdownLatch = new CountdownLatch(blockRequests.size());
         for(FileSearchResult result : resultList){
             DownloadTask task = new DownloadTask(/*result,*/this, node.getDealWithClient(result.getAddress(), result.getPort()));
