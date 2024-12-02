@@ -1,9 +1,9 @@
 import Messages.FileBlockRequestMessage;
 
 public class DownloadTask extends Thread {
-    private DownloadTasksManager downloadTasksManager;
+    private final DownloadTasksManager downloadTasksManager;
     //private FileSearchResult fileSearchResult;
-    private DealWithClient dealWithClient;
+    private final DealWithClient dealWithClient;
 
     public DownloadTask(/*FileSearchResult fileSearchResult,*/ DownloadTasksManager downloadTasksManager, DealWithClient dealWithClient) {
         //this.fileSearchResult = fileSearchResult;

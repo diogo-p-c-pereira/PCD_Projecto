@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Node {
     private final String path;  //folder path
     private Map<File, byte[]> files; //TODO Trocar a key e o value, faz mais sentido a key ser a hash
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private List<DealWithClient> dealWithClients;
     private DefaultListModel<FileSearch> currentSearch;
     private List<DownloadTasksManager> tasksManagers;
@@ -62,9 +62,11 @@ public class Node {
             throw new RuntimeException(e);
         }
     }
-    public ServerSocket getSocket(){
+
+    /*public ServerSocket getSocket(){
         return serverSocket;
-    }
+    }*/
+
     public Map<File, byte[]> getFiles() {
         return files;
     }
@@ -153,7 +155,7 @@ public class Node {
 
     //// Invoked when DealWithClient receives search result
     /// updates DefaultListModel with the results
-    public void updateSearchList(List<FileSearchResult> list) { //TODO Perguntar pq demora, ou trocar por outra coisa
+    public void updateSearchList(List<FileSearchResult> list) {
         for(FileSearchResult r: list){
             updateSearchLock.lock();
             boolean found = false;

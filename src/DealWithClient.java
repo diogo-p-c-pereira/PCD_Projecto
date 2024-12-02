@@ -10,8 +10,8 @@ import java.util.Map;
 public class DealWithClient extends Thread{
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
-    private Socket socket;
-    private Node node; //Parent node
+    private final Socket socket;
+    private final Node node; //Parent node
     private ObjectInputStream in;
     private ObjectOutputStream out;
 
