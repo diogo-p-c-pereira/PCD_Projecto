@@ -12,7 +12,7 @@ public class GUI  {
     private final JFrame frame;
 
     private JTextField searchText; //Search TextField for Top Search Bar
-    private JList<FileSearch> searchList;// JList with FileSearch for Search Result List field
+    private JList<FileSearch> searchList; //JList with FileSearch for Search Result List field
 
     public static GUI getInstance(){
         if(instance == null) {
@@ -51,7 +51,7 @@ public class GUI  {
 
         ///File Search Result List
         searchList = new JList<>(node.getCurrentSearchResults());
-        searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); //TODO Perguntar Prof, basta a selecçao com o control ou tem de ser com o rato?
+        searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JScrollPane scrollPane = new JScrollPane(searchList);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
         frame.add(scrollPane, BorderLayout.CENTER);

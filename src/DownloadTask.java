@@ -19,6 +19,7 @@ public class DownloadTask extends Thread {
                 break;
             }
             dealWithClient.send(request);
+            //TODO Espera até receber bloco, cadeado ou semaforo
         }
     }
 }

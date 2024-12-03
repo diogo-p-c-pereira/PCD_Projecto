@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
-    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
+    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 10;
 
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
@@ -18,7 +18,6 @@ public class DealWithClient extends Thread{
     private final Node node; //Parent node
     private ObjectInputStream in;
     private ObjectOutputStream out;
-    private ExecutorService pool;
 
     public DealWithClient(InetAddress inetAddress, int port, Node node, Socket socket) {
         this.inetAddress = inetAddress;
@@ -101,7 +100,6 @@ public class DealWithClient extends Thread{
     //// Loop that Receives Message/Request from Client Node and processes its request
     /// each request is executed in its own thread with is submitted to the ThreadPool
     private void serve(){
-        pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
         while(!interrupted()){
             try {
                 Object obj = in.readObject();
@@ -128,7 +126,7 @@ public class DealWithClient extends Thread{
                 }
                 if(obj instanceof FileBlockAnswerMessage answer){ //Receber Downloads
                     Thread t = new Thread(() -> {
-                        System.out.println("Block received from: " +answer.getAddress() + ":" + answer.getPort());
+                        System.out.println("Block received from: " + answer.getAddress() + ":" + answer.getPort());
                         DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
                         dtm.putBlockAnswer(answer);
                     });
@@ -145,11 +143,11 @@ public class DealWithClient extends Thread{
 
     @Override
     public void run(){
-        try {//Conexao aceite
+        try { //Connection accepted
             System.out.println("Added new node: " + this);
             doConnections();
             serve();
-        } finally {//a fechar
+        } finally { //Closing connection
             try {
                 socket.close();
                 node.removeDealWithClient(this);

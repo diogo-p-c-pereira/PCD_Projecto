@@ -52,7 +52,7 @@ public class DownloadTasksManager extends Thread {
     }
 
     //// Used by DealWithClient when it receives a download answer
-    public synchronized void putBlockAnswer(FileBlockAnswerMessage blockAnswer) { //TODO ver syncronized
+    public synchronized void putBlockAnswer(FileBlockAnswerMessage blockAnswer) {
         blockAnswers.add(blockAnswer);
         countdownLatch.countDown();
     }

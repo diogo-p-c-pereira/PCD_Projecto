@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Node {
     private final String path;  //folder path
-    private Map<File, byte[]> files; //TODO Trocar a key e o value, faz mais sentido a key ser a hash
+    private Map<File, byte[]> files;
     private final ServerSocket serverSocket;
     private List<DealWithClient> dealWithClients;
     private DefaultListModel<FileSearch> currentSearch;
@@ -62,10 +62,6 @@ public class Node {
             throw new RuntimeException(e);
         }
     }
-
-    /*public ServerSocket getSocket(){
-        return serverSocket;
-    }*/
 
     public Map<File, byte[]> getFiles() {
         return files;
@@ -228,7 +224,7 @@ public class Node {
             }
             //Verifies if it is already connected to that Address and Port
             for(DealWithClient d : dealWithClients){
-                if(d.getInetAddress() == address && d.getPort() == destinationPort){
+                if(d.getInetAddress().equals(address) && d.getPort() == destinationPort){
                     throw new ConnectException();
                 }
             }

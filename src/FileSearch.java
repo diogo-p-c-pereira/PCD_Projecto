@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileSearch {
-    //TODO Name pending (find a more suitable name for this)
     //// Wrapper class used for collecting all SearchResults for the same file of different nodes
     /// its main purpose it's to be loaded to the DefaultListModel to be used on the GUI JList
     /// to be displayed and selected from the Graphic Interface
