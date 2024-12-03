@@ -11,20 +11,8 @@ public class GUI  {
     private final Node node; //Current Node
     private final JFrame frame;
 
-    //// Panels
-    private JPanel northPanel;
-    private JPanel eastPanel;
-
-    //// Top Search Bar
-    private JTextField searchText;
-    private JButton searchButton;
-
-    //// FileSearchResult List
-    private JList<FileSearch> searchList;
-
-    //// East Buttons
-    private JButton downloadButton;
-    private JButton connectButton;
+    private JTextField searchText; //Search TextField for Top Search Bar
+    private JList<FileSearch> searchList;// JList with FileSearch for Search Result List field
 
     public static GUI getInstance(){
         if(instance == null) {
@@ -45,8 +33,8 @@ public class GUI  {
     private void addFrameContent () {
         frame.setLayout (new BorderLayout());
 
-        //Top Search Bar
-        northPanel = new JPanel();
+        ///Top Search Bar
+        JPanel northPanel = new JPanel();
         frame.add(northPanel, BorderLayout.NORTH);
         northPanel.setLayout(new GridLayout(1,3));
 
@@ -57,32 +45,32 @@ public class GUI  {
         searchText.setColumns(20);
         northPanel.add(searchText);
 
-        searchButton = new JButton ("Procurar");
+        JButton searchButton = new JButton("Procurar");
         searchButton.addActionListener(_ -> node.search(searchText.getText()));
         northPanel.add(searchButton);
 
-        //File Search Result List
+        ///File Search Result List
         searchList = new JList<>(node.getCurrentSearchResults());
         searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); //TODO Perguntar Prof, basta a selecçao com o control ou tem de ser com o rato?
         JScrollPane scrollPane = new JScrollPane(searchList);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
         frame.add(scrollPane, BorderLayout.CENTER);
 
-        //East Buttons Panel
-        eastPanel = new JPanel();
+        ///East Buttons Panel
+        JPanel eastPanel = new JPanel();
         eastPanel.setLayout(new GridLayout(2,1));
         frame.add(eastPanel, BorderLayout.EAST);
 
-        //Download Button
-        downloadButton = new JButton ("Descarregar");
+        ///Download Button
+        JButton downloadButton = new JButton("Descarregar");
         downloadButton.addActionListener(_ -> {
             List<FileSearch> res = searchList.getSelectedValuesList();
             node.startDownload(res);
         });
         eastPanel.add(downloadButton);
 
-        //Connect Button
-        connectButton = new JButton("Ligar a nó");
+        ///Connect Button
+        JButton connectButton = new JButton("Ligar a nó");
         connectButton.addActionListener(_ -> newConnectionPrompt());
         eastPanel.add(connectButton);
     }
@@ -93,7 +81,7 @@ public class GUI  {
         jdialog.setLayout(new FlowLayout());
         jdialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-        //Address and Port Labels and TextFields
+        ///Address and Port Labels and TextFields
         jdialog.add(new JLabel("Endereço:"));
         JTextField address = new JTextField("", 10);
         jdialog.add(address);
@@ -101,12 +89,12 @@ public class GUI  {
         JTextField port = new JTextField("", 3);
         jdialog.add(port);
 
-        //Cancel Button
+        ///Cancel Button
         JButton cancel = new JButton("Cancelar");
         cancel.addActionListener(_ -> jdialog.dispose());
         jdialog.add(cancel);
 
-        //OK Button
+        ///OK Button
         JButton save = new JButton("OK");
         save.addActionListener(_ -> {
             if(node.newConnection(address.getText(), Integer.parseInt(port.getText()))) {
