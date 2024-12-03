@@ -14,11 +14,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Node {
     private final String path;  //folder path
-    private Map<File, byte[]> files;
+    private final Map<File, byte[]> files;
     private final ServerSocket serverSocket;
-    private List<DealWithClient> dealWithClients;
-    private DefaultListModel<FileSearch> currentSearch;
-    private List<DownloadTasksManager> tasksManagers;
+    private final List<DealWithClient> dealWithClients;
+    private final DefaultListModel<FileSearch> currentSearch;
+    private final List<DownloadTasksManager> tasksManagers;
 
     public Node(int port, String path) {
         try {
@@ -99,7 +99,7 @@ public class Node {
                 return f;
             }
         }
-        return null; //TODO Mandar erro qq dps
+        return null;
     }
 
     public synchronized void writeFile(byte[] file, String filename) throws IOException {
@@ -183,6 +183,10 @@ public class Node {
 
     public void removeDealWithClient(DealWithClient dealWithClient){
         dealWithClients.remove(dealWithClient);
+    }
+
+    public void removeDownloadTaskManager(DownloadTasksManager dtm){
+        tasksManagers.remove(dtm);
     }
 
     //// Thread responsible for receiving connection Requests

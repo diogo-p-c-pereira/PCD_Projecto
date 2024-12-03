@@ -10,7 +10,7 @@ public class FileSearch {
     /// its toString also enables the GUI to display the number of nodes a file is available
     private final String fileName;
     private final byte[] hash;
-    private List<FileSearchResult> list;
+    private final List<FileSearchResult> list;
 
     public FileSearch(FileSearchResult fileSearchResult) {
         this.list = new ArrayList<>();

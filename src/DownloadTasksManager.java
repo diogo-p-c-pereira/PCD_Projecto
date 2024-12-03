@@ -19,8 +19,8 @@ public class DownloadTasksManager extends Thread {
     private byte[] file;
     private final byte[] hash;
     private final List<FileSearchResult> resultList;
-    private List<FileBlockRequestMessage> blockRequests;
-    private List<FileBlockAnswerMessage> blockAnswers;
+    private final List<FileBlockRequestMessage> blockRequests;
+    private final List<FileBlockAnswerMessage> blockAnswers;
     private final long startTime;
     //private List<DownloadTask> tasks;
     private CountdownLatch countdownLatch; //Used to wait until all Blocks are received
@@ -40,7 +40,6 @@ public class DownloadTasksManager extends Thread {
 
     //// BlockRequest Getter used by DownloadTask Thread
     private final Lock requestsLock = new ReentrantLock();
-    //TODO arranjar condiçoes para a Lock
     public FileBlockRequestMessage getBlockRequest() {
         requestsLock.lock();
         if (blockRequests.isEmpty()) {
@@ -175,6 +174,7 @@ public class DownloadTasksManager extends Thread {
         try {
             countdownLatch.await();
             finishDownload();
+            node.removeDownloadTaskManager(this);
         } catch (InterruptedException | NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }
