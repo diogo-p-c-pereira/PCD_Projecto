@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
     private static final int THREADPOOL_SIMULTANEOUS_THREADS = 10;
+    private static final ExecutorService pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
 
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
