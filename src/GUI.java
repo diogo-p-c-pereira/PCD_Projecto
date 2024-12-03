@@ -63,7 +63,7 @@ public class GUI  {
 
         //File Search Result List
         searchList = new JList<>(node.getCurrentSearchResults());
-        searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); //TODO Perguntar Prof, basta a selecçao com o control ou tem de ser com o rato?
         JScrollPane scrollPane = new JScrollPane(searchList);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
         frame.add(scrollPane, BorderLayout.CENTER);

@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
-    public static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
+    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
 
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
@@ -84,9 +84,8 @@ public class DealWithClient extends Thread{
     //// Creates a FileBlockAnswerMessage with the requested block data by the FileBlockRequestMessage
     public FileBlockAnswerMessage createFileBlockAnswer(FileBlockRequestMessage request) {
         File file = node.getFile(request.getHash());
-        byte[] f = null;
         try {
-            f = Files.readAllBytes(file.toPath());
+            byte[] f = Files.readAllBytes(file.toPath());
             int offset = (int)request.getBlockOffset();
             byte[] blockData = new byte[(int)request.getBlockLength()];
             for(int i = 0; i <blockData.length; i++){
