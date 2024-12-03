@@ -6,14 +6,19 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
+    public static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
+
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
     private final Socket socket;
     private final Node node; //Parent node
     private ObjectInputStream in;
     private ObjectOutputStream out;
+    private ExecutorService pool;
 
     public DealWithClient(InetAddress inetAddress, int port, Node node, Socket socket) {
         this.inetAddress = inetAddress;
@@ -49,7 +54,7 @@ public class DealWithClient extends Thread{
     ////
 
     //// Sends any message/request to client Node
-    public void send(Serializable message) {
+    public synchronized void send(Serializable message) {
         try {
             out.writeObject(message);
         } catch (IOException e) {
@@ -77,39 +82,57 @@ public class DealWithClient extends Thread{
     ////
 
     //// Creates a FileBlockAnswerMessage with the requested block data by the FileBlockRequestMessage
-    public FileBlockAnswerMessage createFileBlockAnswer(FileBlockRequestMessage request) throws IOException {
+    public FileBlockAnswerMessage createFileBlockAnswer(FileBlockRequestMessage request) {
         File file = node.getFile(request.getHash());
-        byte[] f = Files.readAllBytes(file.toPath());
-        int offset = (int)request.getBlockOffset();
-        byte[] blockData = new byte[(int)request.getBlockLength()];
-        for(int i = 0; i <blockData.length; i++){
-            blockData[i] = f[offset+i];
+        byte[] f = null;
+        try {
+            f = Files.readAllBytes(file.toPath());
+            int offset = (int)request.getBlockOffset();
+            byte[] blockData = new byte[(int)request.getBlockLength()];
+            for(int i = 0; i <blockData.length; i++){
+                blockData[i] = f[offset+i];
+            }
+            return new FileBlockAnswerMessage(blockData, request.getHash(), request.getBlockOffset(), node.getAddress() , node.getPort());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return new FileBlockAnswerMessage(blockData, request.getHash(), request.getBlockOffset(), node.getAddress() , node.getPort());
     }
     ////
 
     //// Loop that Receives Message/Request from Client Node and processes its request
     private void serve(){
+        pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
         while(!interrupted()){
             try {
                 Object obj = in.readObject();
                 if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
-                    List<FileSearchResult> searchResultList = search(search);
-                    out.writeObject(new FileSearchResultList(searchResultList));
+                    Thread t = new Thread(() -> {
+                        List<FileSearchResult> searchResultList = search(search);
+                        send(new FileSearchResultList(searchResultList));
+                    });
+                    pool.submit(t);
                 }
                 if(obj instanceof FileBlockRequestMessage request){  //Responder aos pedidos de Download
-                    FileBlockAnswerMessage answer = createFileBlockAnswer(request);
-                    out.writeObject(answer);
+                    Thread t = new Thread(() -> {
+                        FileBlockAnswerMessage answer = createFileBlockAnswer(request);
+                        send(answer);
+                    });
+                    pool.submit(t);
                 }
                 if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
-                    List<FileSearchResult> list = resultList.getFileSearchResultList();
-                    node.updateSearchList(list);
+                    Thread t = new Thread(() -> {
+                        List<FileSearchResult> list = resultList.getFileSearchResultList();
+                        node.updateSearchList(list);
+                    });
+                    pool.submit(t);
                 }
                 if(obj instanceof FileBlockAnswerMessage answer){ //Receber Downloads
-                    System.out.println("Block received from: " +answer.getAddress() + ":" + answer.getPort());
-                    DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
-                    dtm.putBlockAnswer(answer);
+                    Thread t = new Thread(() -> {
+                        System.out.println("Block received from: " +answer.getAddress() + ":" + answer.getPort());
+                        DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
+                        dtm.putBlockAnswer(answer);
+                    });
+                    pool.submit(t);
                 }
             } catch (IOException e) {
                 break;
