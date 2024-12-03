@@ -100,6 +100,7 @@ public class DealWithClient extends Thread{
     ////
 
     //// Loop that Receives Message/Request from Client Node and processes its request
+    /// each request is executed in its own thread with is submitted to the ThreadPool
     private void serve(){
         pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
         while(!interrupted()){

@@ -106,15 +106,17 @@ public class Node {
         return null; //TODO Mandar erro qq dps
     }
 
-    public void writeFile(byte[] file, String filename) throws IOException {
+    public synchronized void writeFile(byte[] file, String filename) throws IOException {
         Files.write(new File(path + File.separator + filename).toPath() ,file);
     }
 
     //// Download ////
-    public void startDownload(List<FileSearchResult> results){
-        DownloadTasksManager downloadTasksManager = new DownloadTasksManager(results, this);
-        tasksManagers.add(downloadTasksManager);
-        downloadTasksManager.start();
+    public void startDownload(List<FileSearch> results){
+        for(FileSearch result : results){
+            DownloadTasksManager downloadTasksManager = new DownloadTasksManager(result.getList(), this);
+            tasksManagers.add(downloadTasksManager);
+            downloadTasksManager.start();
+        }
     }
 
     public DownloadTasksManager getTaskManager(byte[] hash){

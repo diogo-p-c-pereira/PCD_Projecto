@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.FlowLayout;
+import java.util.List;
 import javax.swing.*;
 
 
@@ -62,6 +63,7 @@ public class GUI  {
 
         //File Search Result List
         searchList = new JList<>(node.getCurrentSearchResults());
+        searchList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JScrollPane scrollPane = new JScrollPane(searchList);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
         frame.add(scrollPane, BorderLayout.CENTER);
@@ -74,9 +76,8 @@ public class GUI  {
         //Download Button
         downloadButton = new JButton ("Descarregar");
         downloadButton.addActionListener(_ -> {
-            /*TODO ir vendo*/
-            FileSearch res = searchList.getSelectedValue();
-            node.startDownload(res.getList());
+            List<FileSearch> res = searchList.getSelectedValuesList();
+            node.startDownload(res);
         });
         eastPanel.add(downloadButton);
 
