@@ -104,20 +104,6 @@ public class DealWithClient extends Thread{
         while(!interrupted()){
             try {
                 Object obj = in.readObject();
-                if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
-                    Thread t = new Thread(() -> {
-                        List<FileSearchResult> searchResultList = search(search);
-                        send(new FileSearchResultList(searchResultList));
-                    });
-                    t.start();
-                }
-                if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
-                    Thread t = new Thread(() -> {
-                        List<FileSearchResult> list = resultList.getFileSearchResultList();
-                        node.updateSearchList(list);
-                    });
-                    t.start();
-                }
                 if(obj instanceof FileBlockRequestMessage request){  //Responder aos pedidos de Download
                     Thread t = new Thread(() -> {
                         FileBlockAnswerMessage answer = createFileBlockAnswer(request);
@@ -132,6 +118,20 @@ public class DealWithClient extends Thread{
                         dtm.putBlockAnswer(answer);
                     });
                     pool.submit(t);
+                }
+                if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
+                    Thread t = new Thread(() -> {
+                        List<FileSearchResult> searchResultList = search(search);
+                        send(new FileSearchResultList(searchResultList));
+                    });
+                    t.start();
+                }
+                if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
+                    Thread t = new Thread(() -> {
+                        List<FileSearchResult> list = resultList.getFileSearchResultList();
+                        node.updateSearchList(list);
+                    });
+                    t.start();
                 }
             } catch (IOException e) {
                 break;
