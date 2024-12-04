@@ -109,7 +109,14 @@ public class DealWithClient extends Thread{
                         List<FileSearchResult> searchResultList = search(search);
                         send(new FileSearchResultList(searchResultList));
                     });
-                    pool.submit(t);
+                    t.start();
+                }
+                if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
+                    Thread t = new Thread(() -> {
+                        List<FileSearchResult> list = resultList.getFileSearchResultList();
+                        node.updateSearchList(list);
+                    });
+                    t.start();
                 }
                 if(obj instanceof FileBlockRequestMessage request){  //Responder aos pedidos de Download
                     Thread t = new Thread(() -> {
@@ -118,14 +125,7 @@ public class DealWithClient extends Thread{
                     });
                     pool.submit(t);
                 }
-                if(obj instanceof FileSearchResultList resultList){ //Receber Resultados de Procura
-                    Thread t = new Thread(() -> {
-                        List<FileSearchResult> list = resultList.getFileSearchResultList();
-                        node.updateSearchList(list);
-                    });
-                    pool.submit(t);
-                }
-                if(obj instanceof FileBlockAnswerMessage answer){ //Receber Downloads
+                if(obj instanceof FileBlockAnswerMessage answer){ //Receber blocos de Downloads
                     Thread t = new Thread(() -> {
                         System.out.println("Block received from: " + answer.getAddress() + ":" + answer.getPort());
                         DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
