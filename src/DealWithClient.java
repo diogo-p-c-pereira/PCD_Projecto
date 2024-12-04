@@ -68,7 +68,7 @@ public class DealWithClient extends Thread{
     /// not case-sensitive, compares file_name and keyword converted into lower_case
     private List<FileSearchResult> search(WordSearchMessage search){
         List<FileSearchResult> results = new ArrayList<>();
-        Map<File, byte[]> files = node.getFiles();
+        Map<File, byte[]> files = node.getFileMap();
         String keyword = search.getKeyword().toLowerCase();
         for(Map.Entry<File, byte[]> entry: files.entrySet()){
             File f = entry.getKey();

@@ -63,7 +63,7 @@ public class Node {
         }
     }
 
-    public Map<File, byte[]> getFiles() {
+    public Map<File, byte[]> getFileMap() {
         synchronized (files) {
             return files;
         }
