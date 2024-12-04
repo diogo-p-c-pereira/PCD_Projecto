@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadTasksManager extends Thread {
     private static final int BLOCK_SIZE = 10240; //Block size in bytes
+    
     private final Node node;
     private final String fileName;
     private final byte[] file;

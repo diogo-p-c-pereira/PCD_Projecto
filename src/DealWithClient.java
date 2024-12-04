@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
-    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 10;
+    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 10; //TODO Reverter para 5, qd estiver tudo limpo
     private static final ExecutorService pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
 
     private final InetAddress inetAddress; //Client's address
@@ -117,7 +117,7 @@ public class DealWithClient extends Thread{
                         DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
                         dtm.putBlockAnswer(answer);
                     });
-                    pool.submit(t);
+                    pool.submit(t); //TODO ver isto, não submeter para a Pool
                 }
                 if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
                     Thread t = new Thread(() -> {
