@@ -51,9 +51,12 @@ public class DownloadTasksManager extends Thread {
     }
 
     //// Used by DealWithClient when it receives a download answer
-    public synchronized void putBlockAnswer(FileBlockAnswerMessage blockAnswer) {
+    private final Lock answerLock = new ReentrantLock();
+    public void putBlockAnswer(FileBlockAnswerMessage blockAnswer) {
+        answerLock.lock();
         blockAnswers.add(blockAnswer);
         countdownLatch.countDown();
+        answerLock.unlock();
     }
 
      public byte[] getHash(){
@@ -110,7 +113,7 @@ public class DownloadTasksManager extends Thread {
             for (int i = 0; i < data.length; i++) {
                 file[offset + i] = data[i];
             }
-           list = SupplierResult.addSupplierResult(list, blockAnswer.getAddress(), blockAnswer.getPort());
+           SupplierResult.addSupplierResult(list, blockAnswer.getAddress(), blockAnswer.getPort());
         }
         return list;
     }
@@ -136,7 +139,7 @@ public class DownloadTasksManager extends Thread {
         }
 
         //// Used to increment or add SupplierResult to List
-        public static List<SupplierResult> addSupplierResult(List<SupplierResult> list, InetAddress address, int port) {
+        public static void addSupplierResult(List<SupplierResult> list, InetAddress address, int port) {
             boolean added = false;
             for (SupplierResult temp : list) {
                 if (temp.address.equals(address) && temp.port == port) {
@@ -148,7 +151,6 @@ public class DownloadTasksManager extends Thread {
             if (!added) {
                 list.add(new SupplierResult(address, port));
             }
-            return list;
         }
 
         //// Used to create a String with all SupplierResults to send to GUI

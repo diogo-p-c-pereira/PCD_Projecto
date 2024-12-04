@@ -64,20 +64,23 @@ public class Node {
     }
 
     public Map<File, byte[]> getFiles() {
-        return files;
+        synchronized (files) {
+            return files;
+        }
     }
     ////
 
     //// Updates File Hashmap with the files on the folder
     public void updateFileList(){
-        File[] fs = new File(path).listFiles(/*f -> f.getName().endsWith(".mp3")*/ _ -> true); //TODO Alterar, só para testes
-        if (fs != null) {
-            for(File f : fs){
-                files.put(f, generateFileHash(f));
+        synchronized (files) {
+            File[] fs = new File(path).listFiles(/*f -> f.getName().endsWith(".mp3")*/ _ -> true); //TODO Alterar, só para testes
+            if (fs != null) {
+                for(File f : fs){
+                    files.put(f, generateFileHash(f));
+                }
             }
         }
     }
-    ////
 
 
     //// Generates Hash from the File data
@@ -88,20 +91,22 @@ public class Node {
             throw new RuntimeException(e);
         }
     }
-    ////
 
     //// Obtains a file via its unique hash
     public File getFile(byte[] hash) {
-        for(Map.Entry<File, byte[]> entry : files.entrySet()){
-            File f = entry.getKey();
-            byte[] entryHash = entry.getValue();
-            if(Arrays.equals(entryHash, hash)){
-                return f;
+        synchronized (files) {
+            for(Map.Entry<File, byte[]> entry : files.entrySet()){
+                File f = entry.getKey();
+                byte[] entryHash = entry.getValue();
+                if(Arrays.equals(entryHash, hash)){
+                    return f;
+                }
             }
+            return null;
         }
-        return null;
     }
 
+    //// Writes file to disk
     public synchronized void writeFile(byte[] file, String filename) throws IOException {
         Files.write(new File(path + File.separator + filename).toPath() ,file);
     }
@@ -110,46 +115,77 @@ public class Node {
     public void startDownload(List<FileSearch> results){
         for(FileSearch result : results){
             DownloadTasksManager downloadTasksManager = new DownloadTasksManager(result.getList(), this);
-            tasksManagers.add(downloadTasksManager);
+            synchronized (tasksManagers) {
+                tasksManagers.add(downloadTasksManager);
+            }
             downloadTasksManager.start();
         }
     }
 
+    /// DownloadTaskManager getter, used by DealWithClient to know to which DTM to send received block
     public DownloadTasksManager getTaskManager(byte[] hash){
-        for(DownloadTasksManager downloadTasksManager : tasksManagers){
-            if(Arrays.equals(downloadTasksManager.getHash(), hash)){
-                return downloadTasksManager;
+        synchronized (tasksManagers) {
+            for(DownloadTasksManager downloadTasksManager : tasksManagers){
+                if(Arrays.equals(downloadTasksManager.getHash(), hash)){
+                    return downloadTasksManager;
+                }
             }
+            throw new RuntimeException("No DownloadTasksManager found for hash: " + Arrays.toString(hash));
         }
-        throw new RuntimeException("No DownloadTasksManager found for hash: " + Arrays.toString(hash));
     }
+
+    /// Removes DownloadTaskManager, used when download finishes
+    public void removeDownloadTaskManager(DownloadTasksManager dtm){
+        synchronized (tasksManagers) {
+            tasksManagers.remove(dtm);
+        }
+    }
+
+    /// DealWithClient getter, used to be give argument to DownloadTask
     public DealWithClient getDealWithClient(InetAddress address, int port) {
-        for(DealWithClient dealWithClient : dealWithClients){
-            if(dealWithClient.getInetAddress().equals(address) && dealWithClient.getPort() == port){
-                return dealWithClient;
+        synchronized (dealWithClients) {
+            for(DealWithClient dealWithClient : dealWithClients){
+                if(dealWithClient.getInetAddress().equals(address) && dealWithClient.getPort() == port){
+                    return dealWithClient;
+                }
             }
+            throw new IllegalArgumentException("No deal with client found");
         }
-        throw new IllegalArgumentException("No deal with client found");
     }
-    //////////
+
+    /// Adds new DealWithClient, used when connection is created
+    private void addDealWithClient(DealWithClient dealWithClient){
+        synchronized (dealWithClients) {
+            dealWithClients.add(dealWithClient);
+        }
+    }
+
+    /// Removes DealWithClient, used when connection is severed
+    public void removeDealWithClient(DealWithClient dealWithClient){
+        synchronized (dealWithClients) {
+            dealWithClients.remove(dealWithClient);
+        }
+    }
 
     //// Search ////
     /// Sets up a clean currentSearch DefaultListModel
     /// and sends search request to all connected nodes via each DealWithClient
     public void search(String s){
-        //TODO Não deixar fazer nova procura sem receber as respostas todas da anterior, usar CountdownLatch?
+        //TODO Não deixar fazer nova procura sem receber as respostas todas da anterior, usar CountdownLatch?, para não usar syncronized
         Thread t = new Thread(() -> {
             WordSearchMessage message = new WordSearchMessage(s);
             currentSearch.clear();
-            for(DealWithClient dealWithClient : dealWithClients){
-                dealWithClient.send(message);
+            synchronized (dealWithClients) {
+                for(DealWithClient dealWithClient : dealWithClients){
+                    dealWithClient.send(message);
+                }
             }
         });
         t.start();
     }
 
     //// Lock to ensure DefaultListModel coherence
-    private Lock updateSearchLock = new ReentrantLock();
+    private final Lock updateSearchLock = new ReentrantLock();
 
     //// Invoked when DealWithClient receives search result
     /// updates DefaultListModel with the results
@@ -174,20 +210,7 @@ public class Node {
             updateSearchLock.unlock();
         }
     }
-    ///////////////
-
-
-    private void addDealWithClient(DealWithClient dealWithClient){
-        dealWithClients.add(dealWithClient);
-    }
-
-    public void removeDealWithClient(DealWithClient dealWithClient){
-        dealWithClients.remove(dealWithClient);
-    }
-
-    public void removeDownloadTaskManager(DownloadTasksManager dtm){
-        tasksManagers.remove(dtm);
-    }
+    ////////////
 
     //// Thread responsible for receiving connection Requests
     private class ConnectionThread extends Thread {
@@ -227,9 +250,11 @@ public class Node {
                 throw new ConnectException();
             }
             //Verifies if it is already connected to that Address and Port
-            for(DealWithClient d : dealWithClients){
-                if(d.getInetAddress().equals(address) && d.getPort() == destinationPort){
-                    throw new ConnectException();
+            synchronized (dealWithClients) {
+                for(DealWithClient d : dealWithClients){
+                    if(d.getInetAddress().equals(address) && d.getPort() == destinationPort){
+                        throw new ConnectException();
+                    }
                 }
             }
             Socket socket = new Socket(address, destinationPort);
