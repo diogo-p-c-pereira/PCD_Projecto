@@ -82,7 +82,7 @@ public class DealWithClient extends Thread{
     ////
 
     //// Creates a FileBlockAnswerMessage with the requested block data by the FileBlockRequestMessage
-    public FileBlockAnswerMessage createFileBlockAnswer(FileBlockRequestMessage request) {
+    private FileBlockAnswerMessage createFileBlockAnswer(FileBlockRequestMessage request) {
         File file = node.getFile(request.getHash());
         try {
             byte[] f = Files.readAllBytes(file.toPath());

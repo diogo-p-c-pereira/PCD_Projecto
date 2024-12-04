@@ -84,7 +84,7 @@ public class Node {
 
 
     //// Generates Hash from the File data
-    public static byte[] generateFileHash(File f) {
+    private static byte[] generateFileHash(File f) {
         try {
             return MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(f.toPath()));
         } catch (NoSuchAlgorithmException | IOException e) {

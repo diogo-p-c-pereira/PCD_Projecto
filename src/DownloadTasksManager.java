@@ -13,7 +13,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadTasksManager extends Thread {
-    public static final int BLOCK_SIZE = 10240; //Block size in bytes
+    private static final int BLOCK_SIZE = 10240; //Block size in bytes
     private final Node node;
     private final String fileName;
     private final byte[] file;
@@ -64,7 +64,7 @@ public class DownloadTasksManager extends Thread {
      }
 
     //// Generates all blockRequest from info provided by FileSearchResult
-    public List<FileBlockRequestMessage> generateFileBlockRequestMessages(FileSearchResult request) {
+    private List<FileBlockRequestMessage> generateFileBlockRequestMessages(FileSearchResult request) {
         //f.length -> file size in bytes
         int nBlocks;
         int fileSize = (int)request.getFile_size();
