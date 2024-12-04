@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadTasksManager extends Thread {
     private static final int BLOCK_SIZE = 10240; //Block size in bytes
-    
+
     private final Node node;
     private final String fileName;
     private final byte[] file;
@@ -156,11 +156,11 @@ public class DownloadTasksManager extends Thread {
 
         //// Used to create a String with all SupplierResults to send to GUI
         public static String listToString(List<SupplierResult> list) {
-            String s = "";
-            for (SupplierResult temp : list) {
-                s += temp.toString()+"\n";
+            StringBuilder sb = new StringBuilder();
+            for (SupplierResult res : list) {
+                sb.append(res.toString()).append("\n");
             }
-            return s;
+            return sb.toString();
         }
     }
 

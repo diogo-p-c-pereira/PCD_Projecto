@@ -6,9 +6,9 @@ public class DownloadTask extends Thread {
     //private FileSearchResult fileSearchResult;
 
     public DownloadTask(DownloadTasksManager downloadTasksManager, DealWithClient dealWithClient/*, FileSearchResult fileSearchResult*/) {
-        //this.fileSearchResult = fileSearchResult;
         this.downloadTasksManager = downloadTasksManager;
         this.dealWithClient = dealWithClient;
+        //this.fileSearchResult = fileSearchResult;
     }
 
     @Override
