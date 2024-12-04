@@ -16,7 +16,7 @@ public class DownloadTasksManager extends Thread {
     public static final int BLOCK_SIZE = 10240; //Block size in bytes
     private final Node node;
     private final String fileName;
-    private byte[] file;
+    private final byte[] file;
     private final byte[] hash;
     private final List<FileSearchResult> resultList;
     private final List<FileBlockRequestMessage> blockRequests;

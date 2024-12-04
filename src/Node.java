@@ -172,6 +172,7 @@ public class Node {
     /// and sends search request to all connected nodes via each DealWithClient
     public void search(String s){
         //TODO Não deixar fazer nova procura sem receber as respostas todas da anterior, usar CountdownLatch?, para não usar syncronized
+        //TODO Mesma coisa que a prof pediu para os pedidos de download
         Thread t = new Thread(() -> {
             WordSearchMessage message = new WordSearchMessage(s);
             currentSearch.clear();
