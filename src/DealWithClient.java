@@ -6,13 +6,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class DealWithClient extends Thread{
-    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 10; //TODO Reverter para 5, qd estiver tudo limpo
-    private static final ExecutorService pool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
-
     private final InetAddress inetAddress; //Client's address
     private final int port; //Client's port
     private final Socket socket;
@@ -64,6 +59,26 @@ public class DealWithClient extends Thread{
     }
     ////
 
+    //// Send block requests, used separately in order to wait until the answer is received before proceeding
+    public synchronized void sendBlockRequest(FileBlockRequestMessage request, DownloadTasksManager dtm) {
+        try {
+            out.writeObject(request);
+            while (!dtm.isBlockReceived(request)) {
+                wait();
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //// Method when dealing with a received block answer
+    private synchronized void answerReceived(FileBlockAnswerMessage answer) {
+        System.out.println("Block received from: " + answer.getAddress() + ":" + answer.getPort());
+        DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
+        dtm.putBlockAnswer(answer);
+        notifyAll();
+    }
+
     //// Searches within the Node's file if exists any with the file_name containing the keyword
     /// not case-sensitive, compares file_name and keyword converted into lower_case
     private List<FileSearchResult> search(WordSearchMessage search){
@@ -98,6 +113,7 @@ public class DealWithClient extends Thread{
     }
     ////
 
+
     //// Loop that Receives Message/Request from Client Node and processes its request
     /// each request is executed in its own thread with is submitted to the ThreadPool
     private void serve(){
@@ -109,15 +125,13 @@ public class DealWithClient extends Thread{
                         FileBlockAnswerMessage answer = createFileBlockAnswer(request);
                         send(answer);
                     });
-                    pool.submit(t);
+                    node.submitToRequestPool(t);
                 }
                 if(obj instanceof FileBlockAnswerMessage answer){ //Receber blocos de Downloads
-                    Thread t = new Thread(() -> {
-                        System.out.println("Block received from: " + answer.getAddress() + ":" + answer.getPort());
-                        DownloadTasksManager dtm = node.getTaskManager(answer.getHash());
-                        dtm.putBlockAnswer(answer);
+                        Thread t = new Thread(() -> {
+                            answerReceived(answer);
                     });
-                    pool.submit(t); //TODO ver isto, não submeter para a Pool
+                    t.start();
                 }
                 if(obj instanceof WordSearchMessage search){  //Responder aos pedidos de Procura
                     Thread t = new Thread(() -> {

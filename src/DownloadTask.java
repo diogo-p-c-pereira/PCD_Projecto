@@ -3,12 +3,10 @@ import Messages.FileBlockRequestMessage;
 public class DownloadTask extends Thread {
     private final DownloadTasksManager downloadTasksManager;
     private final DealWithClient dealWithClient;
-    //private FileSearchResult fileSearchResult;
 
-    public DownloadTask(DownloadTasksManager downloadTasksManager, DealWithClient dealWithClient/*, FileSearchResult fileSearchResult*/) {
+    public DownloadTask(DownloadTasksManager downloadTasksManager, DealWithClient dealWithClient) {
         this.downloadTasksManager = downloadTasksManager;
         this.dealWithClient = dealWithClient;
-        //this.fileSearchResult = fileSearchResult;
     }
 
     @Override
@@ -18,8 +16,7 @@ public class DownloadTask extends Thread {
             if(request == null){
                 break;
             }
-            dealWithClient.send(request);
-            //TODO Espera até receber bloco, cadeado ou semaforo ou algo assim
+            dealWithClient.sendBlockRequest(request, downloadTasksManager);
         }
     }
 }

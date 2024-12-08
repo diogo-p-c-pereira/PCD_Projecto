@@ -9,16 +9,20 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Node {
+    private static final int THREADPOOL_SIMULTANEOUS_THREADS = 5;
     private final String path;  //folder path
     private final Map<File, byte[]> files;
     private final ServerSocket serverSocket;
     private final List<DealWithClient> dealWithClients;
     private final DefaultListModel<FileSearch> currentSearch;
     private final List<DownloadTasksManager> tasksManagers;
+    private final ExecutorService blockRequestPool; //ThreadPool used to limit number of simultaneous requests
 
     public Node(int port, String path) {
         try {
@@ -28,6 +32,7 @@ public class Node {
             currentSearch = new DefaultListModel<>();
             dealWithClients = new ArrayList<>();
             tasksManagers = new ArrayList<>();
+            blockRequestPool = Executors.newFixedThreadPool(THREADPOOL_SIMULTANEOUS_THREADS);
             File dir = new File(path);
             if (!dir.exists()) dir.mkdirs();
             updateFileList();
@@ -120,6 +125,11 @@ public class Node {
             }
             downloadTasksManager.start();
         }
+    }
+
+    //// Submits block request answering thread to ThreadPool, called by DealWithClient
+    public void submitToRequestPool(Thread thread){
+        blockRequestPool.submit(thread);
     }
 
     /// DownloadTaskManager getter, used by DealWithClient to know to which DTM to send received block
@@ -229,9 +239,11 @@ public class Node {
                     Socket socket = serverSocket.accept();
                     ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
                     NewConnectionRequest request = (NewConnectionRequest) in.readObject();
-                    DealWithClient thread = new DealWithClient(request.getAddress(), request.getPort(), node, socket);
-                    node.addDealWithClient(thread);
-                    thread.start();
+                    synchronized (dealWithClients){
+                        DealWithClient thread = new DealWithClient(request.getAddress(), request.getPort(), node, socket);
+                        node.addDealWithClient(thread);
+                        thread.start();
+                    }
                 } catch (IOException | ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
@@ -257,17 +269,16 @@ public class Node {
                         throw new ConnectException();
                     }
                 }
+                Socket socket = new Socket(address, destinationPort);
+                //// Send NewConnectionRequest to other Node
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                request = new NewConnectionRequest(InetAddress.getByName(null), serverSocket.getLocalPort());
+                out.writeObject(request);
+                //// Creates new DealWithClient
+                DealWithClient thread = new DealWithClient(address, destinationPort, this, socket);
+                thread.start();
+                addDealWithClient(thread);
             }
-            Socket socket = new Socket(address, destinationPort);
-            //// Send NewConnectionRequest to other Node
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            request = new NewConnectionRequest(InetAddress.getByName(null), serverSocket.getLocalPort());
-            out.writeObject(request);
-            //// Creates new DealWithClient
-            DealWithClient thread = new DealWithClient(address, destinationPort, this, socket);
-            thread.start();
-            addDealWithClient(thread);
-
         } catch (ConnectException e) {
             return false;
         } catch (IOException e) {

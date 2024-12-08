@@ -23,7 +23,6 @@ public class DownloadTasksManager extends Thread {
     private final List<FileBlockRequestMessage> blockRequests;
     private final List<FileBlockAnswerMessage> blockAnswers;
     private final long startTime;
-    //private List<DownloadTask> tasks;
     private CountdownLatch countdownLatch; //Used to wait until all Blocks are received
 
     public DownloadTasksManager(List<FileSearchResult> resultList, Node node) {
@@ -36,7 +35,6 @@ public class DownloadTasksManager extends Thread {
         blockRequests = generateFileBlockRequestMessages(result);
         blockAnswers = new ArrayList<>();
         startTime = System.currentTimeMillis();
-        //tasks = new ArrayList<>();
     }
 
     //// BlockRequest Getter used by DownloadTask Thread
@@ -60,6 +58,22 @@ public class DownloadTasksManager extends Thread {
         answerLock.unlock();
     }
 
+    //// Verifies if a requested block has already been received, comparing the offset values
+    public boolean isBlockReceived(FileBlockRequestMessage request) {
+        answerLock.lock();
+        try {
+            for(FileBlockAnswerMessage answer: blockAnswers){
+                if(answer.getOffset()==request.getBlockOffset()){
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            answerLock.unlock();
+        }
+    }
+
+    //// File hash getter, used as an unique identifier
      public byte[] getHash(){
         return hash;
      }
@@ -170,8 +184,7 @@ public class DownloadTasksManager extends Thread {
         System.out.println("Download started: " + fileName + " Expected blocks: " + blockRequests.size());
         countdownLatch = new CountdownLatch(blockRequests.size());
         for(FileSearchResult result : resultList){
-            DownloadTask task = new DownloadTask(/*result,*/this, node.getDealWithClient(result.getAddress(), result.getPort()));
-            //tasks.add(task);
+            DownloadTask task = new DownloadTask(this, node.getDealWithClient(result.getAddress(), result.getPort()));
             task.start();
         }
         try {
